@@ -1,0 +1,197 @@
+<!-- templates/dashboard.html -->
+{% extends 'base.html' %}
+
+{% block title %}Dashboard - Metadata Manager{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <h1 class="mb-4">
+            <i class="fas fa-tachometer-alt"></i> Metadata Dashboard
+        </h1>
+    </div>
+</div>
+
+<!-- Statistics Cards -->
+<div class="row mb-4">
+    <div class="col-md-3">
+        <div class="card text-white bg-primary">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Data Sources</h6>
+                        <h2 class="mb-0">{{ total_sources }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="fas fa-server"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'data_source_list' %}" class="text-white text-decoration-none">
+                    View all <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-success">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Tables</h6>
+                        <h2 class="mb-0">{{ total_tables }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="fas fa-table"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'table_list' %}" class="text-white text-decoration-none">
+                    View all <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-info">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Columns</h6>
+                        <h2 class="mb-0">{{ total_columns }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="fas fa-columns"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'table_list' %}" class="text-white text-decoration-none">
+                    Explore <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card text-white bg-warning">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <h6 class="card-title">Lineage Links</h6>
+                        <h2 class="mb-0">{{ total_lineages }}</h2>
+                    </div>
+                    <div class="fs-1">
+                        <i class="fas fa-project-diagram"></i>
+                    </div>
+                </div>
+            </div>
+            <div class="card-footer">
+                <a href="{% url 'lineage_view' %}" class="text-white text-decoration-none">
+                    View lineage <i class="fas fa-arrow-right"></i>
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Recent Activity -->
+<div class="row">
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0"><i class="fas fa-server"></i> Recent Data Sources</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_sources %}
+                    <div class="list-group list-group-flush">
+                        {% for source in recent_sources %}
+                            <a href="{% url 'data_source_detail' source.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ source.name }}</h6>
+                                    <small class="badge bg-{{ source.is_active|yesno:'success,secondary' }}">
+                                        {{ source.is_active|yesno:'Active,Inactive' }}
+                                    </small>
+                                </div>
+                                <p class="mb-1 text-muted small">
+                                    <i class="fas fa-tag"></i> {{ source.get_source_type_display }}
+                                </p>
+                                <small class="text-muted">Created: {{ source.created_at|date:"M d, Y" }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No data sources yet. <a href="{% url 'data_source_create' %}">Create one</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-6">
+        <div class="card">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0"><i class="fas fa-table"></i> Recent Tables</h5>
+            </div>
+            <div class="card-body">
+                {% if recent_tables %}
+                    <div class="list-group list-group-flush">
+                        {% for table in recent_tables %}
+                            <a href="{% url 'table_detail' table.id %}" class="list-group-item list-group-item-action">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ table.name }}</h6>
+                                    <small class="badge bg-info">{{ table.get_table_type_display }}</small>
+                                </div>
+                                <p class="mb-1 text-muted small">
+                                    <i class="fas fa-database"></i> {{ table.schema.data_source.name }}.{{ table.schema.name }}
+                                </p>
+                                <small class="text-muted">Updated: {{ table.updated_at|date:"M d, Y" }}</small>
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No tables yet. <a href="{% url 'table_create' %}">Create one</a></p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Quick Actions -->
+<div class="row mt-4">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-bolt"></i> Quick Actions</h5>
+            </div>
+            <div class="card-body">
+                <div class="row">
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'data_source_create' %}" class="btn btn-outline-primary w-100">
+                            <i class="fas fa-plus"></i> Add Data Source
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'table_create' %}" class="btn btn-outline-success w-100">
+                            <i class="fas fa-plus"></i> Add Table
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'lineage_view' %}" class="btn btn-outline-warning w-100">
+                            <i class="fas fa-sitemap"></i> View Lineage
+                        </a>
+                    </div>
+                    <div class="col-md-3 mb-2">
+                        <a href="{% url 'glossary_list' %}" class="btn btn-outline-info w-100">
+                            <i class="fas fa-book"></i> Browse Glossary
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

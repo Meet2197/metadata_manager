@@ -1,0 +1,103 @@
+<!-- templates/data_sources/detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ source.name }} - Data Sources{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'data_source_list' %}">Data Sources</a></li>
+        <li class="breadcrumb-item active">{{ source.name }}</li>
+    </ol>
+</nav>
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1>
+            <i class="fas fa-server"></i> {{ source.name }}
+            {% if source.is_active %}
+                <span class="badge bg-success">Active</span>
+            {% else %}
+                <span class="badge bg-secondary">Inactive</span>
+            {% endif %}
+        </h1>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'data_source_update' source.id %}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Details</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Type:</dt>
+                    <dd class="col-sm-7">{{ source.get_source_type_display }}</dd>
+                    
+                    <dt class="col-sm-5">Host:</dt>
+                    <dd class="col-sm-7">{{ source.host|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-5">Port:</dt>
+                    <dd class="col-sm-7">{{ source.port|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-5">Database:</dt>
+                    <dd class="col-sm-7">{{ source.database_name|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-5">Created:</dt>
+                    <dd class="col-sm-7">{{ source.created_at|date:"M d, Y" }}</dd>
+                    
+                    <dt class="col-sm-5">Last Sync:</dt>
+                    <dd class="col-sm-7">{{ source.last_sync|date:"M d, Y H:i"|default:"Never" }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        {% if source.description %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Description</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ source.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0"><i class="fas fa-database"></i> Schemas ({{ schemas.count }})</h5>
+            </div>
+            <div class="card-body">
+                {% if schemas %}
+                    <div class="list-group">
+                        {% for schema in schemas %}
+                            <div class="list-group-item">
+                                <div class="d-flex w-100 justify-content-between">
+                                    <h6 class="mb-1">{{ schema.name }}</h6>
+                                    <small>
+                                        <span class="badge bg-success">{{ schema.table_count }} tables</span>
+                                    </small>
+                                </div>
+                                {% if schema.description %}
+                                    <p class="mb-1 small text-muted">{{ schema.description }}</p>
+                                {% endif %}
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <p class="text-muted">No schemas found for this data source.</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

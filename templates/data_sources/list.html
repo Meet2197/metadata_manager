@@ -1,0 +1,82 @@
+<!-- templates/data_sources/list.html -->
+{% extends 'base.html' %}
+
+{% block title %}Data Sources - Metadata Manager{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-md-6">
+        <h1><i class="fas fa-server"></i> Data Sources</h1>
+    </div>
+    <div class="col-md-6 text-end">
+        <a href="{% url 'data_source_create' %}" class="btn btn-primary">
+            <i class="fas fa-plus"></i> Add Data Source
+        </a>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-hover">
+                <thead>
+                    <tr>
+                        <th>Name</th>
+                        <th>Type</th>
+                        <th>Host</th>
+                        <th>Schemas</th>
+                        <th>Tables</th>
+                        <th>Status</th>
+                        <th>Last Sync</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for source in sources %}
+                        <tr>
+                            <td>
+                                <a href="{% url 'data_source_detail' source.id %}">
+                                    <strong>{{ source.name }}</strong>
+                                </a>
+                                {% if source.description %}
+                                    <br><small class="text-muted">{{ source.description|truncatewords:10 }}</small>
+                                {% endif %}
+                            </td>
+                            <td>
+                                <span class="badge bg-secondary">{{ source.get_source_type_display }}</span>
+                            </td>
+                            <td>{{ source.host|default:"-" }}</td>
+                            <td><span class="badge bg-info">{{ source.schema_count }}</span></td>
+                            <td><span class="badge bg-success">{{ source.table_count }}</span></td>
+                            <td>
+                                {% if source.is_active %}
+                                    <span class="badge bg-success">Active</span>
+                                {% else %}
+                                    <span class="badge bg-secondary">Inactive</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ source.last_sync|date:"M d, Y"|default:"Never" }}</td>
+                            <td>
+                                <div class="btn-group btn-group-sm">
+                                    <a href="{% url 'data_source_detail' source.id %}" class="btn btn-outline-primary" title="View">
+                                        <i class="fas fa-eye"></i>
+                                    </a>
+                                    <a href="{% url 'data_source_update' source.id %}" class="btn btn-outline-warning" title="Edit">
+                                        <i class="fas fa-edit"></i>
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="8" class="text-center text-muted">
+                                No data sources found. <a href="{% url 'data_source_create' %}">Add your first data source</a>
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

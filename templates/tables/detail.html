@@ -1,0 +1,215 @@
+<!-- templates/tables/detail.html -->
+{% extends 'base.html' %}
+
+{% block title %}{{ table.name }} - Tables{% endblock %}
+
+{% block content %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb">
+        <li class="breadcrumb-item"><a href="{% url 'dashboard' %}">Home</a></li>
+        <li class="breadcrumb-item"><a href="{% url 'table_list' %}">Tables</a></li>
+        <li class="breadcrumb-item active">{{ table.name }}</li>
+    </ol>
+</nav>
+
+<div class="row mb-3">
+    <div class="col-md-8">
+        <h1>
+            <i class="fas fa-table"></i> {{ table.name }}
+            <span class="badge bg-info">{{ table.get_table_type_display }}</span>
+        </h1>
+        <p class="text-muted">
+            <i class="fas fa-database"></i> 
+            {{ table.schema.data_source.name }}.{{ table.schema.name }}.{{ table.name }}
+        </p>
+    </div>
+    <div class="col-md-4 text-end">
+        <a href="{% url 'table_update' table.id %}" class="btn btn-warning">
+            <i class="fas fa-edit"></i> Edit
+        </a>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <!-- Table Info Card -->
+        <div class="card mb-3">
+            <div class="card-header bg-primary text-white">
+                <h5 class="mb-0">Table Information</h5>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0">
+                    <dt class="col-sm-5">Schema:</dt>
+                    <dd class="col-sm-7">{{ table.schema.name }}</dd>
+                    
+                    <dt class="col-sm-5">Data Source:</dt>
+                    <dd class="col-sm-7">
+                        <a href="{% url 'data_source_detail' table.schema.data_source.id %}">
+                            {{ table.schema.data_source.name }}
+                        </a>
+                    </dd>
+                    
+                    <dt class="col-sm-5">Type:</dt>
+                    <dd class="col-sm-7">{{ table.get_table_type_display }}</dd>
+                    
+                    <dt class="col-sm-5">Owner:</dt>
+                    <dd class="col-sm-7">{{ table.owner.username|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-5">Row Count:</dt>
+                    <dd class="col-sm-7">{{ table.row_count|default:"-" }}</dd>
+                    
+                    <dt class="col-sm-5">Size:</dt>
+                    <dd class="col-sm-7">
+                        {% if table.size_bytes %}
+                            {{ table.size_bytes|filesizeformat }}
+                        {% else %}
+                            -
+                        {% endif %}
+                    </dd>
+                    
+                    <dt class="col-sm-5">Created:</dt>
+                    <dd class="col-sm-7">{{ table.created_at|date:"M d, Y" }}</dd>
+                    
+                    <dt class="col-sm-5">Updated:</dt>
+                    <dd class="col-sm-7">{{ table.updated_at|date:"M d, Y" }}</dd>
+                </dl>
+            </div>
+        </div>
+        
+        {% if table.description %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Description</h5>
+            </div>
+            <div class="card-body">
+                <p>{{ table.description }}</p>
+            </div>
+        </div>
+        {% endif %}
+        
+        {% if table.tags %}
+        <div class="card mb-3">
+            <div class="card-header">
+                <h5 class="mb-0">Tags</h5>
+            </div>
+            <div class="card-body">
+                {% for tag in table.get_tags_list %}
+                    <span class="badge bg-primary me-1">{{ tag }}</span>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="col-md-8">
+        <!-- Columns Tab -->
+        <ul class="nav nav-tabs" role="tablist">
+            <li class="nav-item" role="presentation">
+                <button class="nav-link active" data-bs-toggle="tab" data-bs-target="#columns" type="button">
+                    <i class="fas fa-columns"></i> Columns ({{ columns.count }})
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#lineage" type="button">
+                    <i class="fas fa-project-diagram"></i> Lineage
+                </button>
+            </li>
+            <li class="nav-item" role="presentation">
+                <button class="nav-link" data-bs-toggle="tab" data-bs-target="#quality" type="button">
+                    <i class="fas fa-check-circle"></i> Quality Rules
+                </button>
+            </li>
+        </ul>
+        
+        <div class="tab-content mt-3">
+            <!-- Columns Tab -->
+            <div class="tab-pane fade show active" id="columns">
+                <div class="card">
+                    <div class="card-body">
+                        {% if columns %}
+                            <div class="table-responsive">
+                                <table class="table table-sm">
+                                    <thead>
+                                        <tr>
+                                            <th>#</th>
+                                            <th>Column Name</th>
+                                            <th>Data Type</th>
+                                            <th>Nullable</th>
+                                            <th>Keys</th>
+                                            <th>Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for column in columns %}
+                                            <tr>
+                                                <td>{{ column.ordinal_position }}</td>
+                                                <td><strong>{{ column.name }}</strong></td>
+                                                <td><code>{{ column.data_type }}</code></td>
+                                                <td>
+                                                    {% if column.is_nullable %}
+                                                        <span class="badge bg-secondary">NULL</span>
+                                                    {% else %}
+                                                        <span class="badge bg-danger">NOT NULL</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td>
+                                                    {% if column.is_primary_key %}
+                                                        <span class="badge bg-warning">PK</span>
+                                                    {% endif %}
+                                                    {% if column.is_foreign_key %}
+                                                        <span class="badge bg-info">FK</span>
+                                                    {% endif %}
+                                                </td>
+                                                <td><small>{{ column.description|default:"-" }}</small></td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No columns defined for this table.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Lineage Tab -->
+            <div class="tab-pane fade" id="lineage">
+                <div class="row">
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-success text-white">
+                                <h6 class="mb-0"><i class="fas fa-arrow-left"></i> Upstream (Sources)</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if upstream %}
+                                    <ul class="list-group">
+                                        {% for lineage in upstream %}
+                                            <li class="list-group-item">
+                                                <a href="{% url 'table_detail' lineage.source_table.id %}">
+                                                    {{ lineage.source_table.name }}
+                                                </a>
+                                                <br><small class="text-muted">{{ lineage.get_lineage_type_display }}</small>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="text-muted">No upstream dependencies</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="col-md-6">
+                        <div class="card">
+                            <div class="card-header bg-warning text-white">
+                                <h6 class="mb-0"><i class="fas fa-arrow-right"></i> Downstream (Targets)</h6>
+                            </div>
+                            <div class="card-body">
+                                {% if downstream %}
+                                    <ul class="list-group">
+                                        {% for lineage in downstream %}
+                                            <li class="list-group-item">
+                                                <a href="{% url 'table_detail' lineage.target_table.id %}">
+                                                    {{ lineage.target_table.name }}
+                                                </a>
