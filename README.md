@@ -131,6 +131,7 @@ Example Metadata Record (data/user1.json)
 
 ```bash
 metadata_manager/
+├── bin
 ├── manage.py
 ├── requirements.txt
 ├── metadata_manager/      # Project settings
@@ -140,8 +141,9 @@ metadata_manager/
 │   ├── forms.py          # Forms
 │   ├── urls.py           # URL routing
 │   └── admin.py          # Admin interface
-├── templates/            # HTML templates
-└── static/    
+│ templates/            # HTML templates
+│ static/    
+├── setup.sh
 ```
 
 # 🧪 Testing
