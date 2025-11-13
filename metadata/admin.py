@@ -1,16 +1,50 @@
 # metadata/admin.py
 from django.contrib import admin
-from .models import (
-    DataSource, Schema, Table, Column, DataLineage,
-    Glossary, TableGlossaryMapping, DataQualityRule, DataQualityCheck
-)
+from .models import DataSource, Schema, Table, Column, DataLineage, Glossary, DataQualityRule, DataQualityCheck
 
 @admin.register(DataSource)
 class DataSourceAdmin(admin.ModelAdmin):
-    list_display = ['name', 'source_type', 'host', 'is_active', 'created_at']
-    list_filter = ['source_type', 'is_active']
-    search_fields = ['name', 'description', 'host']
-    readonly_fields = ['created_at', 'updated_at']
+    # Fixes admin.E108, admin.E116: Replaces old fields with new file/metadata fields
+    list_display = (
+        'name', 
+        'status', 
+        'upload_date', 
+        'get_file_name_display' # Custom method to display file name
+    )
+
+    # Fixes admin.E116: Only filter by fields that exist
+    list_filter = ('status',) 
+    
+    search_fields = ('name', 'description')
+    
+    # Fixes admin.E035: Makes the UUID and date fields read-only
+    readonly_fields = (
+        'uuid', 
+        'status', 
+        'upload_date', 
+        'uploaded_file',
+        'processed_metadata'
+    )
+    
+    fieldsets = (
+        (None, {
+            'fields': ('name', 'description', 'uploaded_file', 'uuid', 'upload_date', 'status')
+        }),
+        ('Metadata Details', {
+            'fields': ('processed_metadata',),
+            'classes': ('collapse',),
+        })
+    )
+
+    # Custom method to display the uploaded file name
+    def get_file_name_display(self, obj):
+        if obj.uploaded_file:
+            return obj.uploaded_file.name.split('/')[-1]
+        return "N/A"
+    get_file_name_display.short_description = 'File Name'
+    
+    # NOTE: You will need to similarly update the admin classes for 
+    # Table, Column, etc., if their models also changed.
 
 @admin.register(Schema)
 class SchemaAdmin(admin.ModelAdmin):

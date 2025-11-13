@@ -2,40 +2,32 @@
 from django.db import models
 from django.contrib.auth.models import User
 from django.utils import timezone
+import uuid
 
 class DataSource(models.Model):
-    """Represents a data source (database, API, file system, etc.)"""
-    SOURCE_TYPES = [
-        ('postgres', 'PostgreSQL'),
-        ('mysql', 'MySQL'),
-        ('mongodb', 'MongoDB'),
-        ('api', 'REST API'),
-        ('file', 'File System'),
-        ('s3', 'AWS S3'),
-        ('snowflake', 'Snowflake'),
-        ('bigquery', 'BigQuery'),
-    ]
+    # Unique ID for easy lookup
+    uuid = models.UUIDField(default=uuid.uuid4, editable=False, unique=True)
+    name = models.CharField(max_length=255)
+    description = models.TextField(blank=True, null=True)
     
-    name = models.CharField(max_length=200, unique=True)
-    description = models.TextField(blank=True)
-    source_type = models.CharField(max_length=50, choices=SOURCE_TYPES)
-    connection_string = models.CharField(max_length=500, blank=True)
-    host = models.CharField(max_length=200, blank=True)
-    port = models.IntegerField(null=True, blank=True)
-    database_name = models.CharField(max_length=200, blank=True)
-    username = models.CharField(max_length=200, blank=True)
-    password = models.CharField(max_length=200, blank=True)  # Should be encrypted in production
-    is_active = models.BooleanField(default=True)
-    created_by = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, related_name='created_sources')
-    created_at = models.DateTimeField(auto_now_add=True)
-    updated_at = models.DateTimeField(auto_now=True)
-    last_sync = models.DateTimeField(null=True, blank=True)
+    # 1. Field to store the actual uploaded file
+    uploaded_file = models.FileField(upload_to='data_source_files/%Y/%m/%d/')
     
-    class Meta:
-        ordering = ['-created_at']
+    # 2. Field to store the raw, processed metadata from the file
+    # JSONField maps nicely to SQLite's JSON capabilities (since Django 3.1)
+    processed_metadata = models.JSONField(default=dict)
     
+    # Status to track if processing succeeded or failed
+    status = models.CharField(
+        max_length=20, 
+        default='PENDING', 
+        choices=[('PENDING', 'Pending'), ('SUCCESS', 'Success'), ('FAILED', 'Failed')]
+    )
+    
+    upload_date = models.DateTimeField(default=timezone.now)
+
     def __str__(self):
-        return f"{self.name} ({self.source_type})"
+        return self.name
 
 
 class Schema(models.Model):

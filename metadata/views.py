@@ -4,6 +4,11 @@ from django.contrib.auth.decorators import login_required
 from django.contrib import messages
 from django.db.models import Count, Q
 from django.http import JsonResponse
+from django.urls import reverse
+from .forms import DataSourceUploadForm
+from .models import DataSource
+from .utils import parse_file_metadata
+
 from .models import (
     DataSource, Schema, Table, Column, DataLineage, 
     Glossary, DataQualityRule, DataQualityCheck
@@ -26,6 +31,45 @@ def dashboard(request):
     }
     return render(request, 'dashboard.html', context)
 
+def data_source_upload_view(request):
+    if request.method == 'POST':
+        form = DataSourceUploadForm(request.POST, request.FILES)
+        if form.is_valid():
+            # 1. Save the new DataSource instance (which saves the file to the media path)
+            data_source = form.save(commit=False)
+            data_source.status = 'PENDING'
+            data_source.save()
+
+            try:
+                # 2. Process the metadata using the helper function
+                processed_data = parse_file_metadata(data_source.uploaded_file)
+                
+                # 3. Check for errors during processing
+                if 'error' in processed_data:
+                    data_source.status = 'FAILED'
+                else:
+                    data_source.status = 'SUCCESS'
+                
+                # 4. Store the processed metadata and update status
+                data_source.processed_metadata = processed_data
+                data_source.save()
+
+                # Redirect to the detail page on success
+                return redirect(reverse('data_source_detail', args=[data_source.uuid])) 
+                
+            except Exception as e:
+                # Handle any unexpected server errors during processing
+                data_source.status = 'FAILED'
+                data_source.processed_metadata = {'system_error': str(e)}
+                data_source.save()
+                # Consider adding a message/logging here
+
+    else:
+        form = DataSourceUploadForm()
+        
+    context = {'form': form}
+    # Assumes the URL is mapped to the 'data_sources/form.html' template
+    return render(request, 'data_sources/form.html', context)
 
 # Data Source Views
 def data_source_list(request):
@@ -161,7 +205,16 @@ def table_update(request, pk):
         'action': 'Update', 
         'table': table
     })
-
+def data_source_detail_view(request, uuid):
+    # Fetch the DataSource object by its UUID
+    data_source = get_object_or_404(DataSource, uuid=uuid)
+    
+    context = {
+        'data_source': data_source,
+        # The processed metadata is already available as a Python dictionary
+        'extracted_metadata': data_source.processed_metadata 
+    }
+    return render(request, 'data_sources/detail.html', context)
 
 # Lineage Views
 def lineage_view(request):
@@ -229,3 +282,5 @@ def api_search_tables(request):
     } for t in tables]
     
     return JsonResponse({'results': results})
+
+    
