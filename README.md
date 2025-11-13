@@ -13,6 +13,7 @@
 **Metadata Manager** is a lightweight and extensible tool for managing, validating, and organizing metadata for datasets, files, or other digital assets.  
 It helps ensure data consistency, makes schema management easier, and provides a structured approach to storing metadata.
 
+![alt text](<Screenshot from 2025-11-13 11-19-19.png>)
 ---
 
 ## 🚀 Features
