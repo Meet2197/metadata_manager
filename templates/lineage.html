@@ -1,0 +1,239 @@
+<!-- templates/lineage.html -->
+{% extends 'base.html' %}
+
+{% block title %}Data Lineage - Metadata Manager{% endblock %}
+
+{% block extra_css %}
+<style>
+    #lineage-graph {
+        width: 100%;
+        height: 600px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        background: #f8f9fa;
+    }
+    .node {
+        cursor: pointer;
+    }
+    .node circle {
+        fill: #4e73df;
+        stroke: #2e59d9;
+        stroke-width: 2px;
+    }
+    .node text {
+        font-size: 12px;
+        font-family: Arial, sans-serif;
+    }
+    .link {
+        fill: none;
+        stroke: #adb5bd;
+        stroke-width: 2px;
+        marker-end: url(#arrowhead);
+    }
+    .link:hover {
+        stroke: #495057;
+        stroke-width: 3px;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row mb-3">
+    <div class="col-12">
+        <h1><i class="fas fa-project-diagram"></i> Data Lineage</h1>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-9">
+        <div class="card">
+            <div class="card-header">
+                <h5 class="mb-0">Lineage Graph</h5>
+            </div>
+            <div class="card-body">
+                <div id="lineage-graph"></div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-3">
+        <div class="card">
+            <div class="card-header bg-info text-white">
+                <h6 class="mb-0">Lineage Statistics</h6>
+            </div>
+            <div class="card-body">
+                <dl class="mb-0">
+                    <dt>Total Tables:</dt>
+                    <dd id="total-nodes">-</dd>
+                    
+                    <dt>Total Links:</dt>
+                    <dd id="total-links">-</dd>
+                </dl>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Legend</h6>
+            </div>
+            <div class="card-body">
+                <div class="mb-2">
+                    <span class="badge bg-primary">ETL Process</span>
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-success">View</span>
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-warning">Foreign Key</span>
+                </div>
+                <div class="mb-2">
+                    <span class="badge bg-info">Manual</span>
+                </div>
+            </div>
+        </div>
+        
+        <div class="card mt-3">
+            <div class="card-header">
+                <h6 class="mb-0">Recent Lineage</h6>
+            </div>
+            <div class="card-body">
+                <div class="list-group list-group-flush">
+                    {% for lineage in lineages|slice:":5" %}
+                        <div class="list-group-item p-2">
+                            <small>
+                                <a href="{% url 'table_detail' lineage.source_table.id %}">
+                                    {{ lineage.source_table.name }}
+                                </a>
+                                →
+                                <a href="{% url 'table_detail' lineage.target_table.id %}">
+                                    {{ lineage.target_table.name }}
+                                </a>
+                            </small>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<script>
+    // Parse the data from Django
+    const nodes = JSON.parse('{{ nodes|safe }}');
+    const links = JSON.parse('{{ links|safe }}');
+    
+    // Update statistics
+    document.getElementById('total-nodes').textContent = nodes.length;
+    document.getElementById('total-links').textContent = links.length;
+    
+    // Set up the SVG
+    const width = document.getElementById('lineage-graph').offsetWidth;
+    const height = 600;
+    
+    const svg = d3.select('#lineage-graph')
+        .append('svg')
+        .attr('width', width)
+        .attr('height', height);
+    
+    // Define arrow marker
+    svg.append('defs').append('marker')
+        .attr('id', 'arrowhead')
+        .attr('viewBox', '-0 -5 10 10')
+        .attr('refX', 25)
+        .attr('refY', 0)
+        .attr('orient', 'auto')
+        .attr('markerWidth', 8)
+        .attr('markerHeight', 8)
+        .append('svg:path')
+        .attr('d', 'M 0,-5 L 10 ,0 L 0,5')
+        .attr('fill', '#adb5bd');
+    
+    // Create force simulation
+    const simulation = d3.forceSimulation(nodes)
+        .force('link', d3.forceLink(links).id(d => d.id).distance(150))
+        .force('charge', d3.forceManyBody().strength(-500))
+        .force('center', d3.forceCenter(width / 2, height / 2))
+        .force('collision', d3.forceCollide().radius(50));
+    
+    // Create links
+    const link = svg.append('g')
+        .selectAll('line')
+        .data(links)
+        .join('line')
+        .attr('class', 'link')
+        .attr('stroke-width', 2);
+    
+    // Create nodes
+    const node = svg.append('g')
+        .selectAll('g')
+        .data(nodes)
+        .join('g')
+        .attr('class', 'node')
+        .call(d3.drag()
+            .on('start', dragstarted)
+            .on('drag', dragged)
+            .on('end', dragended));
+    
+    // Add circles to nodes
+    node.append('circle')
+        .attr('r', 20)
+        .attr('fill', '#4e73df');
+    
+    // Add labels to nodes
+    node.append('text')
+        .text(d => d.name)
+        .attr('x', 25)
+        .attr('y', 5)
+        .style('font-size', '12px')
+        .style('font-weight', 'bold');
+    
+    // Add source info
+    node.append('text')
+        .text(d => `${d.source}.${d.schema}`)
+        .attr('x', 25)
+        .attr('y', 18)
+        .style('font-size', '10px')
+        .style('fill', '#6c757d');
+    
+    // Add click event
+    node.on('click', function(event, d) {
+        window.location.href = d.url;
+    });
+    
+    // Add tooltip
+    node.append('title')
+        .text(d => `${d.source}.${d.schema}.${d.name}\nClick to view details`);
+    
+    // Update positions on simulation tick
+    simulation.on('tick', () => {
+        link
+            .attr('x1', d => d.source.x)
+            .attr('y1', d => d.source.y)
+            .attr('x2', d => d.target.x)
+            .attr('y2', d => d.target.y);
+        
+        node.attr('transform', d => `translate(${d.x},${d.y})`);
+    });
+    
+    // Drag functions
+    function dragstarted(event, d) {
+        if (!event.active) simulation.alphaTarget(0.3).restart();
+        d.fx = d.x;
+        d.fy = d.y;
+    }
+    
+    function dragged(event, d) {
+        d.fx = event.x;
+        d.fy = event.y;
+    }
+    
+    function dragended(event, d) {
+        if (!event.active) simulation.alphaTarget(0);
+        d.fx = null;
+        d.fy = null;
+    }
+</script>
+{% endblock %}

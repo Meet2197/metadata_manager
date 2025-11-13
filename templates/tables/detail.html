@@ -213,3 +213,59 @@
                                                 <a href="{% url 'table_detail' lineage.target_table.id %}">
                                                     {{ lineage.target_table.name }}
                                                 </a>
+                                                <br><small class="text-muted">{{ lineage.get_lineage_type_display }}</small>
+                                            </li>
+                                        {% endfor %}
+                                    </ul>
+                                {% else %}
+                                    <p class="text-muted">No downstream dependencies</p>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quality Rules Tab -->
+            <div class="tab-pane fade" id="quality">
+                <div class="card">
+                    <div class="card-body">
+                        {% if quality_rules %}
+                            <div class="table-responsive">
+                                <table class="table">
+                                    <thead>
+                                        <tr>
+                                            <th>Rule Name</th>
+                                            <th>Type</th>
+                                            <th>Column</th>
+                                            <th>Status</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for rule in quality_rules %}
+                                            <tr>
+                                                <td>{{ rule.name }}</td>
+                                                <td><span class="badge bg-info">{{ rule.get_rule_type_display }}</span></td>
+                                                <td>{{ rule.column.name|default:"Table Level" }}</td>
+                                                <td>
+                                                    {% if rule.is_active %}
+                                                        <span class="badge bg-success">Active</span>
+                                                    {% else %}
+                                                        <span class="badge bg-secondary">Inactive</span>
+                                                    {% endif %}
+                                                </td>
+                                            </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            </div>
+                        {% else %}
+                            <p class="text-muted">No quality rules defined for this table.</p>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
