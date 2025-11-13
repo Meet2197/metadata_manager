@@ -131,13 +131,17 @@ Example Metadata Record (data/user1.json)
 
 ```bash
 metadata_manager/
-├── data/                 # Metadata storage (e.g., JSON or database files)
-├── schemas/              # Schema definitions for validation
-├── scripts/              # Utility and helper scripts
-├── config.yaml           # Configuration file
-├── requirements.txt      # Project dependencies
-├── manage.py             # Main CLI entrypoint
-└── README.md             # Project documentation
+├── manage.py
+├── requirements.txt
+├── metadata_manager/      # Project settings
+├── metadata/              # Main app
+│   ├── models.py         # Data models
+│   ├── views.py          # View logic
+│   ├── forms.py          # Forms
+│   ├── urls.py           # URL routing
+│   └── admin.py          # Admin interface
+├── templates/            # HTML templates
+└── static/    
 ```
 
 # 🧪 Testing
