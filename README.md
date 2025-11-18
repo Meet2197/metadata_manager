@@ -24,6 +24,11 @@ It helps ensure data consistency, makes schema management easier, and provides a
 - 🔗 Support for **multiple backends** (e.g., JSON, SQLite, PostgreSQL)  
 - ⚙️ Easily **extendable** for custom integrations and data types  
 
+
+![alt text](image.png)
+
+
+
 ---
 
 ## 🧰 Getting Started
@@ -46,6 +51,7 @@ Clone the repository and install dependencies:
 git clone https://github.com/Meet2197/metadata_manager.git
 cd metadata_manager
 ```
+
 ### (Optional) create a virtual environment
 ```bash
 python -m venv venv
