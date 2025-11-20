@@ -1,0 +1,126 @@
+# docker-compose.yml
+version: '3.8'
+
+services:
+  db:
+    image: mysql:8.0
+    container_name: metadata_db
+    environment:
+      MYSQL_DATABASE: metadata_db
+      MYSQL_ROOT_PASSWORD: rootpassword
+      MYSQL_USER: metadata_user
+      MYSQL_PASSWORD: metadata_password
+    volumes:
+      - mysql_data:/var/lib/mysql
+    ports:
+      - "3306:3306"
+    networks:
+      - metadata_network
+
+  redis:
+    image: redis:7-alpine
+    container_name: metadata_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - metadata_network
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.0
+    container_name: metadata_elasticsearch
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    volumes:
+      - es_data:/usr/share/elasticsearch/data
+    ports:
+      - "9200:9200"
+    networks:
+      - metadata_network
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: metadata_rabbitmq
+    environment:
+      RABBITMQ_DEFAULT_USER: metadata
+      RABBITMQ_DEFAULT_PASS: metadata
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    networks:
+      - metadata_network
+
+  web:
+    build: .
+    container_name: metadata_web
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 4
+    volumes:
+      - .:/app
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "8000:8000"
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+      - elasticsearch
+      - rabbitmq
+    networks:
+      - metadata_network
+
+  celery_worker:
+    build: .
+    container_name: metadata_celery_worker
+    command: celery -A config worker -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    networks:
+      - metadata_network
+
+  celery_beat:
+    build: .
+    container_name: metadata_celery_beat
+    command: celery -A config beat -l info
+    volumes:
+      - .:/app
+    env_file:
+      - .env
+    depends_on:
+      - db
+      - redis
+      - rabbitmq
+    networks:
+      - metadata_network
+
+  nginx:
+    image: nginx:alpine
+    container_name: metadata_nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf
+      - static_volume:/app/staticfiles
+      - media_volume:/app/media
+    ports:
+      - "80:80"
+    depends_on:
+      - web
+    networks:
+      - metadata_network
+
+volumes:
+  mysql_data:
+  es_data:
+  static_volume:
+  media_volume:
+
+networks:
+  metadata_network:
+    driver: bridge
